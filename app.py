@@ -2,6 +2,7 @@ import handlers, middlewares, filters
 from loader import dp, db
 from aiogram import executor
 
+
 async def on_startup(dispatcher):
     # db.create_tables()
     pass
