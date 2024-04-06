@@ -4,8 +4,8 @@ from aiogram import executor
 
 
 async def on_startup(dispatcher):
-    # db.create_tables()
-    pass
+    db.create_tables()
+    # pass
 async def on_shutdown(dispatcher):
     db.conn.close()
 
