@@ -1,13 +1,19 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.utils.callback_data import CallbackData
 
-async def like_dislike_inline_keyboard_def(likes, dislikes):
-    below_photo = InlineKeyboardMarkup(
-        inline_keyboard = [
+user_like_data = CallbackData('like', 'act', 'photo_id')
+user_dislike_data = CallbackData('dislike', 'act', 'photo_id')
+
+
+async def user_like_button_def(likes, dislikes, photo_id):
+    user_like_button = InlineKeyboardMarkup(
+        inline_keyboard=[
             [
-                InlineKeyboardButton(text = f'{likes}👍', callback_data="like" ),
-                InlineKeyboardButton(text = f'{dislikes}👎', callback_data="dislike" ),
+                InlineKeyboardButton(text=f"{likes} 👍",
+                                     callback_data=user_like_data.new(act="like", photo_id=photo_id)),
+                InlineKeyboardButton(text=f"{dislikes} 👎",
+                                     callback_data=user_dislike_data.new(act="dislike", photo_id=photo_id)),
             ]
         ]
     )
-
-    return below_photo
+    return user_like_button

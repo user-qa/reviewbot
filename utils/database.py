@@ -1,45 +1,44 @@
+import psycopg2 as db
+from main import config
 import random
 
-import psycopg2 as psql
 
-from main import config
-
-
-class DATABASE:
+class Database:
     def __init__(self):
-        self.conn = psql.connect(
+        self.conn = db.connect(
             database=config.DB_NAME,
             password=config.DB_PASS,
             user=config.DB_USER,
             host=config.DB_HOST
         )
-
         self.cursor = self.conn.cursor()
 
     def create_tables(self):
+        self.conn.commit()
         user_table = """
-        Create table if not exists users(
-        id Serial primary key,
-        chat_id bigint unique,
-        full_name varchar(55),
-        phone_number varchar(13),
-        location_name varchar(50)
-        )
+        CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        chat_id BIGINT NOT NULL,
+        full_name VARCHAR(55),
+        phone_number VARCHAR(13),
+        location_name VARCHAR(55))
         """
 
-        photos = """create table if not exists photos(
-        id serial primary key,
-        chat_id bigint references users(chat_id),
-        photo_id text unique,
-        status boolean default false
-        )"""
+        photos = """
+        CREATE TABLE IF NOT EXISTS photos (
+        id SERIAL PRIMARY KEY,
+        chat_id BIGINT,
+        photo_id VARCHAR(250),
+        status BOOLEAN DEFAULT false)
+        """
 
-        likes = """create table if not exists likes (
-        id serial primary key,
-        chat_id bigint,
-        photo_id text references photos(photo_id),
-        is_like boolean default false
-        )"""
+        likes = """
+        CREATE TABLE IF NOT EXISTS likes (
+        id SERIAL PRIMARY KEY,
+        chat_id BIGINT,
+        photo_id INT references photos(id),
+        is_like BOOLEAN DEFAULT false)
+        """
 
         self.cursor.execute(user_table)
         self.cursor.execute(photos)
@@ -47,48 +46,71 @@ class DATABASE:
 
         self.conn.commit()
 
-    def get_user_chat_id(self, chat_id):
-        query = f"select * from users where chat_id = '{chat_id}'"
+    def get_user_by_chat_id(self, chat_id):
+        query = f"SELECT * FROM users WHERE chat_id = {chat_id}"
         self.cursor.execute(query)
         result = self.cursor.fetchone()
         return result
 
-    def add_user(self, data: dict):
-        chat_id = data['chat_id']
-        full_name = data['full_name']
-        phone_number = data['phone_number']
-        location_name = data['location']
-        query = f"""insert into users(chat_id, full_name, phone_number, location_name) values ({chat_id}, '{full_name}', '{phone_number}', '{location_name}')"""
-        self.cursor.execute(query)
-        self.conn.commit()
-
-    def add_user_photo(self, data):
-        chat_id = data['chat_id']
-        photo = data['photo']
-        query = f"insert into photos(chat_id, photo_id, status) values('{chat_id}', '{photo}', true)"
-        self.cursor.execute(query)
-        self.conn.commit()
-
-    def get_photo_by_chat_id(self, chat_id):
-        query = f"select * from photos where chat_id = {chat_id} and status = true"
+    def get_user_photo_by_chat_id(self, chat_id):
+        query = f"SELECT * FROM photos WHERE chat_id = {chat_id} AND status = true"
         self.cursor.execute(query)
         result = self.cursor.fetchone()
         return result
 
     def get_random_photo(self, chat_id):
-        query = f"select * from photos where chat_id != {chat_id} and status = true"
+        query = f"SELECT * FROM photos WHERE status = true"
         self.cursor.execute(query)
-        results = self.cursor.fetchall()
-        if results:
-            return random.choice(results)
+        result = self.cursor.fetchall()
+        random_photo = random.choice(result)
+        return random_photo
 
-    def get_liked_and_disliked_photos(self, photo_id):
-        query_liked = f"select count(*) from likes where photo_id = '{photo_id}' and is_like = true"
-        query_dislike = f"select count(*) from likes where photo_id = '{photo_id}' and is_like = false"
+    def check_user_like(self, chat_id, photo_id):
+        query = f"SELECT * FROM likes WHERE chat_id = {chat_id} and photo_id = {photo_id}"
+        self.cursor.execute(query)
+        result = self.cursor.fetchone()
+        return result
 
-        self.cursor.execute(query_liked)
-        number_of_likes = self.cursor.fetchone()
+    def get_photo_likes(self, photo_id):
+        query_like = f"SELECT COUNT(*) FROM likes WHERE photo_id = {photo_id} AND is_like = true"
+        query_dislike = f"SELECT COUNT(*) FROM likes WHERE photo_id = {photo_id} AND is_like = false"
+        self.cursor.execute(query_like)
+        likes = self.cursor.fetchall()
         self.cursor.execute(query_dislike)
-        number_of_dislikes = self.cursor.fetchone()
+        dislikes = self.cursor.fetchall()
+        return likes, dislikes
 
-        return number_of_likes, number_of_dislikes
+    def add_user(self, data: dict):
+        chat_id = data["chat_id"]
+        full_name = data["full_name"]
+        phone_number = data["phone_number"]
+        location = data["location"]
+        query = f"""INSERT INTO users (chat_id, full_name, phone_number, location_name)
+        VALUES ({chat_id}, '{full_name}', '{phone_number}', '{location}')"""
+        self.cursor.execute(query)
+        self.conn.commit()
+        return True
+
+    def add_photo(self, data: dict):
+        chat_id = data["chat_id"]
+        photo_id = data["photo_id"]
+
+        query = f"""INSERT INTO photos (chat_id, photo_id, status)
+           VALUES ({chat_id}, '{photo_id}', true)"""
+        self.cursor.execute(query)
+        self.conn.commit()
+        return True
+
+    def user_like(self, chat_id, photo_id, is_like):
+        query = f"""INSERT INTO likes (chat_id, photo_id, is_like)
+           VALUES ({chat_id}, '{photo_id}', {is_like})"""
+        self.cursor.execute(query)
+        self.conn.commit()
+        return True
+
+    def user_delete_like(self, chat_id, photo_id):
+        query = f"""DELETE FROM likes WHERE chat_id = {chat_id} AND photo_id = {photo_id}"""
+        self.cursor.execute(query)
+        self.conn.commit()
+        return True
+

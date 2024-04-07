@@ -1,21 +1,27 @@
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+
 
 user_main_menu = ReplyKeyboardMarkup(
-    [
+    keyboard=[
         [
-            KeyboardButton(text='Rasmlar'),
-            KeyboardButton(text='Rasm Joylash')
+            KeyboardButton(text="Photos"),
+            KeyboardButton(text="Upload Photo"),
         ]
     ], resize_keyboard=True
 )
 
-
-
-below_photo = InlineKeyboardMarkup(
-    [
+phone_number_share = ReplyKeyboardMarkup(
+    keyboard=[
         [
-            InlineKeyboardButton(text = '10👍 10', callback_data="like" ),
-            InlineKeyboardButton(text = '10👎 10', callback_data="dislike" ),
+            KeyboardButton(text="Send Phone Number", request_contact=True)
         ]
-    ]
+    ], resize_keyboard=True
+)
+
+location_share = ReplyKeyboardMarkup(
+    keyboard=[
+        [
+            KeyboardButton(text="Manzilni jo'natish", request_location=True)
+        ]
+    ], resize_keyboard=True
 )
